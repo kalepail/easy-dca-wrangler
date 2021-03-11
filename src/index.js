@@ -1,7 +1,10 @@
 import Bluebird from 'bluebird'
 import { map as loMap } from 'lodash'
 
-import { handleResponse, parseError } from './@js/utils'
+import coinbaseDCA from './coinbase-dca'
+import alpacaDCA from './alpaca-dca'
+
+import { parseError } from './@js/utils'
 
 async function handleFetch(event) {
   try {
@@ -32,21 +35,11 @@ function handleScheduled(event) {
         notional
       ] = symbol_notional.split(':')
 
-      return fetch('https://paper-api.alpaca.markets/v2/orders', {
-        method: 'POST',
-        headers: {
-          'APCA-API-KEY-ID': APCA_PAPER_API_KEY_ID,
-          'APCA-API-SECRET-KEY': APCA_PAPER_API_SECRET_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          symbol,
-          notional,
-          side: 'buy',
-          type: 'market',
-          time_in_force: 'day'
-        })
-      }).then(handleResponse)
+      if (symbol.indexOf('-') === -1) // Alpaca
+        return alpacaDCA(symbol, notional)
+
+      else // Coinbase Pro
+        return coinbaseDCA(event, symbol, notional)
     })
   )
 }
