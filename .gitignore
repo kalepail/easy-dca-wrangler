@@ -1,0 +1,4 @@
+dist
+worker
+node_modules
+wrangler.toml

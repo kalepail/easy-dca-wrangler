@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "main": "./src/index.js",
+  "scripts": {
+    "deploy": "wrangler publish"
+  },
+  "dependencies": {
+    "bluebird": "^3.7.2",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.13.10",
+    "@babel/plugin-proposal-optional-chaining": "^7.13.8",
+    "@babel/preset-env": "^7.13.10",
+    "babel-loader": "^8.2.2"
+  }
+}
