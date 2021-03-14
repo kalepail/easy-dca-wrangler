@@ -1,13 +1,18 @@
 import Bluebird from 'bluebird'
-import { map as loMap } from 'lodash'
+import shajs from 'sha.js'
 
-import coinbaseDCA from './coinbase-dca'
 import alpacaDCA from './alpaca-dca'
+import coinbaseDCA from './coinbase-dca'
 
-import { parseError } from './@js/utils'
+import { handleMapSeriesError, parseError } from './@js/utils'
 
 async function handleFetch(event) {
   try {
+    if (
+      event.request.method !== 'POST'
+      || event.request.headers.get('X-GROOT') !== shajs('sha256').update(Buffer.from(GROOT_SECRET_KEY, 'base64')).digest('hex')
+    ) throw `You are not Groot`
+
     const handleScheduledResponse = await handleScheduled(event)
 
     return new Response(JSON.stringify(handleScheduledResponse), {
@@ -27,20 +32,30 @@ async function handleFetch(event) {
 function handleScheduled(event) {
   return STORE
   .list()
-  .then(({keys}) => loMap(keys, 'name'))
+  .then(({keys}) => keys.map((key) => key.name))
   .then((pairs) => 
-    Bluebird.mapSeries(pairs, (symbol_notional) => {
-      const [
-        symbol, 
-        notional
-      ] = symbol_notional.split(':')
+    Bluebird.mapSeries(pairs, (symbol_notional) =>
+      new Promise((resolve) => {
+        const [
+          symbol, 
+          notional
+        ] = symbol_notional.split(':')
 
-      if (symbol.indexOf('-') === -1) // Alpaca
-        return alpacaDCA(symbol, notional)
+        setTimeout(async () => {
+          let response
 
-      else // Coinbase Pro
-        return coinbaseDCA(event, symbol, notional)
-    })
+          // Alpaca
+          if (symbol.indexOf('-') === -1)
+            response = await alpacaDCA(symbol, notional, event).catch(handleMapSeriesError)
+    
+          // Coinbase Pro
+          else
+            response = await coinbaseDCA(symbol, notional, event).catch(handleMapSeriesError)
+
+          resolve(response)
+        }, 100)
+      })
+    )
   )
 }
 

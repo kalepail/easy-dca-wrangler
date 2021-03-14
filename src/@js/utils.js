@@ -5,6 +5,11 @@ export async function handleResponse(response) {
   throw response
 }
 
+export async function handleMapSeriesError(err) {
+  const errorResponse = await parseError(err)
+  return errorResponse.json()
+}
+
 export async function parseError(err) {
   try {
     if (typeof err === 'string')
